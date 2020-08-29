@@ -4,7 +4,7 @@ To get an ec.bin:
 
 ```
 sudo flashrom -p internal -r x210-current-internal-flashrom.bin
-dd if=x210-current-internal-flashrom.bin of=ec.bin bs=1 skip=$((0x400000)) count=$((0x10000)
+dd if=x210-current-internal-flashrom.bin of=ec.bin bs=1 skip=$((0x400000)) count=$((0x10000))
 ```
 
 Then, to modify and flash:

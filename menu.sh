@@ -2,8 +2,9 @@
 set -x
 dialog --checklist 'Choose the desired patches' 0 0 0 \
 	fix-ec-debug            'Allow hot-patching of EC (incomplete).' on \
-	lcd-brightness		'Allow lowering LCD backlight brightness to 1%'		on \
-	fn-swap			'Swap Fn and Ctrl keys (untested, but should work)'	off \
+	lcd-brightness		'Allow lowering LCD backlight brightness to 1%' on \
+	fn-swap			'Swap Fn and Ctrl keys (untested, but should work)' off \
+	lcd-backlight-925hz     'LCD backlight to 925Hz (untested, but should work)' off \
 	2> selected
 for p in $(cat selected); do
 	fn="patches/$p.rapatch"

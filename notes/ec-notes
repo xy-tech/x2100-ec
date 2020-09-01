@@ -1,0 +1,97 @@
+60 dgcp
+62 flcp
+64 dgvo
+66 bdw
+68 bdl
+6a bpr BATTERY PRESENT RATE
+6c brc BATTERY REMAINING CHARGE
+6e bpv BATTERY PRESENT VOLTAGE
+
+root@siddhi:/sys/kernel/debug/ec/ec0# hexdump -C io
+00000000  00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00  |................|
+*
+00000050  28 ea 0d 0e 49 80 00 00  00 00 00 00 00 00 00 00  |(...I...........|
+00000060  74 1a 91 1f 30 2a a1 00  50 00 00 00 91 1f c0 30  |t...0*..P......0|
+
+lives at: 0x100ba + 0x60
+which means that present rate is 10124, remaining charge is 10126, present voltage is 10128
+
+CONSIDER NOPPING OUT 234f8: WAS  13 00 30 f1 26 01
+                            MAKE 00 2c 00 2c 00 2c
+CONSIDER NOPPING OUT 23450
+
+echo '002c002c002c' | xxd -r -p | dd of=/sys/kernel/debug/ec/ec0/ram bs=1 seek=$[0x234f8]
+echo '002c002c002c' | xxd -r -p | dd of=/sys/kernel/debug/ec/ec0/ram bs=1 seek=$[0x23450]
+
+bat state query:
+
+16 00 00 00
+b0 18 01 00
+
+09 03 00 00
+28 01 01 00
+
+0f 03 00 00
+26 01 01 00
+
+NEW:
+
+0b 03 00 00
+00 ca 02 00
+TEMP REGION
+
+00 ff 00 00
+00 00 00 00
+
+2b29c is old ptr, update last two bytes of ptr at 233ca
+
+use 2c900 as patch region:
+
+2ca00 version:
+echo 16 00 00 00 b0 18 01 00 09 03 00 00 28 01 01 00 0f 03 00 00 26 01 01 00 0b 03 00 00 00 ca 02 00 00 ff 00 00 00 00 00 00 | xxd -r -p | dd of=/sys/kernel/debug/ec/ec0/ram bs=1 seek=$[0x2c900]
+
+into current reg:
+echo 16 00 00 00 b0 18 01 00 09 03 00 00 28 01 01 00 0f 03 00 00 26 01 01 00 0b 03 01 00 24 01 01 00 00 ff 00 00 00 00 00 00 | xxd -r -p | dd of=/sys/kernel/debug/ec/ec0/ram bs=1 seek=$[0x2c900]
+echo '00c9' | xxd -r -p | dd of=/sys/kernel/debug/ec/ec0/ram bs=1 seek=$[0x233ca]
+
+READ CURRENT:
+dd if=/sys/kernel/debug/ec/ec0/ram bs=1 count=2 skip=$[0x2ca00] | hexdump -C
+
+to poll current:
+
+while true; do echo $[0x$(dd if=/sys/kernel/debug/ec/ec0/ram bs=1 count=8 skip=$[0x10b00] 2>/dev/null | xxd -p | sed -e 's/\(..\)\(..\).*/\2\1/')-0x10000] ; sleep 1; done
+
+with the display off and the system completely idle, drawing -450 - -500
+  powertop says 5.60W + 962 mW + 623 mW = 7.18 W
+
+loading the system up some, -1865 to -2114
+  powertop says 12.50W + 6.70W + 625mW = 19.82W
+  delta is 12.64W
+
+could be mA? 2114 mA @ 11.1V = 23.4 W
+500mA @ 11.1V = 5.5W
+delta is 17.9W, which makes sense given a watt or so of fans, and 70% efficient supplies
+
+still 500 is too low for 11.1V... though voltage_now is 12.2V = 6.9W, so...
+
+ok, let's write for bat_changed_un?  we want to load from 0x10b00 and store to 0x10124
+
+at 0x2c930:
+LOADW *0x10b00, R0    12 00 00 F1 00 0B
+STORW R0, *0x10124    13 00 00 F1 24 01
+MOVD $0x10130, R8R7   77 00 01 00 30 01
+@ 0x2c942
+BR 0x23388            10 00 ef 0f 46 6A
+                      op op c  s
+
+displacement is -95BA (23388 - 2C942) = FF6A46
+
+at 0x23382
+BR 0x2c930            10 00 e0 00 AE 95
+displacement is C930 - 3382 = 95AE
+
+br cond disp16 
+
+then at 0x23382:
+BR 0x2c930
+

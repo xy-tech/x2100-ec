@@ -95,3 +95,45 @@ br cond disp16
 then at 0x23382:
 BR 0x2c930
 
+***
+FAST-CHARGING
+***
+
+Here's what I know of battery opcodes so far:
+
+00 = set-and-prepare.  Pointer is a function pointer >> 1.  BATFUN is SMBus ID.
+So: 16 00 00 00, b0 18 01 00 = "set SMBus ID for rest of the sequence", "call function pointer 23160".
+01 = ?
+02 = ?
+03 = *ptr = read16(smbus ID from 00, batfun).  Modifier in theory is absolute value, in practice crashes EC.
+04 = write16(smbus ID from 00, batfun, *ptr).
+
+So let's try injecting:
+
+set SMBus ID to 12 (bq24725a address)
+12 00 00 00
+b0 18 01 00
+
+read manuf ID to 2ca00, should be 0040
+fe 03 00 00
+00 ca 02 00
+
+read manuf ID to 2ca02, should be 000B
+ff 03 00 00
+02 ca 02 00
+
+read current limit to 2ca04
+14 03 00 00
+04 ca 02 00
+
+read voltage limit to 2ca06
+15 03 00 00
+06 ca 02 00
+
+00 ff 00 00
+00 00 00 00
+
+however, doing a read manuf ID causes the SMbus to lock up (i.e., causes it
+to be no longer able to sense battery presence at all).  17m19 says that
+battery is on a separate SMBus than charger, so that makes sense; trying
+other values of `abs` in the `00` opcode does not seem to help, though

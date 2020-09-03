@@ -137,3 +137,6 @@ however, doing a read manuf ID causes the SMbus to lock up (i.e., causes it
 to be no longer able to sense battery presence at all).  17m19 says that
 battery is on a separate SMBus than charger, so that makes sense; trying
 other values of `abs` in the `00` opcode does not seem to help, though
+
+BATTERY CURRENT is at 10038 -- set to 0x5dc (1500) by default
+BATTERY VOLTAGE is at 1003a -- set to 0x3200 (12800 == 4.26V/cell) by default

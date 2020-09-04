@@ -1,0 +1,8 @@
+%.o: %.asm
+	binutils/bin/cr16-unknown-elf-as -o $@ $<
+
+%.oo: %.o
+	binutils/bin/cr16-unknown-elf-ld -o $@ $<
+
+%.dump: %.oo
+	binutils/bin/cr16-unknown-elf-objdump -wD $<

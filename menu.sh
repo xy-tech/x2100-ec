@@ -6,8 +6,8 @@ dialog --checklist 'Choose the desired patches' 0 0 0 \
 	fn-swap			'Swap Fn and Ctrl keys (untested, but should work)' off \
 	lcd-backlight-925hz     'LCD backlight to 925Hz (untested, but should work)' off \
 	true-battery-reading	'Fix battery reading above 70%' on \
-	battery-current		'Fix battery current measurement (experimental)' off \
-	battery-current-and-fast-charge 'Fast charge; charge 4C batteries (includes battery current fix; VERY EXPERIMENTAL)' off \
+	battery-current		'Fix battery current measurement' on \
+	fast-charge		'Fast charge 6C and 9C batteries, and limit input power to 80W (EXPERIMENTAL)' off \
 	2> selected
 for p in $(cat selected); do
 	fn="patches/$p.rapatch"

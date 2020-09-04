@@ -140,3 +140,79 @@ other values of `abs` in the `00` opcode does not seem to help, though
 
 BATTERY CURRENT is at 10038 -- set to 0x5dc (1500) by default
 BATTERY VOLTAGE is at 1003a -- set to 0x3200 (12800 == 4.26V/cell) by default
+
+****************************************
+WHY DOES 6c / 10126 TURN TO 0 SOMETIMES?
+****************************************
+
+the approach: inject chunks of code that bracket functions to tell us if the
+flip happened in that function or not.
+
+FOR INSTANCE:
+
+is it ev0_d's fault?
+
+                             **************************************************************
+                             *                          FUNCTION                          *
+                             **************************************************************
+                             undefined ev0_d()
+             undefined         R0:1           <RETURN>
+                             ev0_d                                           XREF[1]:     0002b6c0(*)  
+        00027998 1e 01           push       $0x2, RA_L
+        0002799a ff c0 e7 a0     BAL        (RA),*handle_ev0_d_wr                            undefined handle_ev0_d_wr()
+        0002799e 1e 03           popret     $0x2, RA_L
+
+interpose with something like:
+
+.org 0x2d000 - 2
+ev0_d_patch:
+        push ra
+        loadw *present_rate, r0
+        cmpw $0, r0
+        bne notbefore
+        loadb *beforebuf, r0
+        cmpb $0, r0 # already caught one
+        bne notbefore
+        movb $'1', r0
+        storb r0, *beforebuf
+notbefore:
+
+        bal (ra),*handle_ev0_d_wr
+
+        loadw *present_rate, r0
+        cmpw $0, r0
+        bne notafter
+        loadb *beforebuf, r0
+        cmpb $0, r0 # already caught one
+        bne notafter
+        movb $'2', r0
+        storb r0, *beforebuf
+
+notafter:
+        popret ra
+
+ok I got a '2' and then I got a '1'.  which is it?
+
+ok try something like:
+
+dd if=/sys/kernel/debug/ec/ec0/ram bs=1 skip=$[0x10124] count=2 2>/dev/null | hexdump -C; \
+echo 00 | xxd -r -p | dd of=/sys/kernel/debug/ec/ec0/ram bs=1 seek=$[0x10b04] 2>/dev/null; \
+dd if=/sys/kernel/debug/ec/ec0/ram bs=1 skip=$[0x10124] count=2 2>/dev/null | hexdump -C; \
+dd if=/sys/kernel/debug/ec/ec0/ram bs=1 skip=$[0x10b04] count=1 2>/dev/null | hexdump -C; \
+sleep 1; dd if=/sys/kernel/debug/ec/ec0/ram bs=1 skip=$[0x10b04] count=1 2>/dev/null | hexdump -C
+
+problem is NOT in ev0_d
+
+
+ev0_5 CAUSED EC TO CRASH
+ev0_6 UNTESTED, POSSIBLE
+ev0_7 is a noop
+ev0_8_ec_cmd?  YOU CAN'T HOT PATCH THAT YOU DUMB OAF.
+ev0_9 is a noop
+ev0_a calls a sketchy function pointer
+ev0_b is a noop
+ev0_c is a noop
+ev0_e looks harmless
+ev0_f is a noop
+
+FOUND IT by just disassembling chunks of code that I hadn't disassembled yet

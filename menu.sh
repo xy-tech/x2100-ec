@@ -3,11 +3,11 @@ set -x
 dialog --checklist 'Choose the desired patches' 0 0 0 \
 	fix-ec-debug            'Allow hot-patching of EC.' on \
 	lcd-brightness		'Allow lowering LCD backlight brightness to 1%' on \
-	fn-swap			'Swap Fn and Ctrl keys (untested, but should work)' off \
-	lcd-backlight-925hz     'LCD backlight to 925Hz (untested, but should work)' off \
+	fn-swap			'Swap Fn and Ctrl keys' off \
+	lcd-backlight-925hz     'LCD backlight to 925Hz' off \
 	true-battery-reading	'Fix battery reading above 70%' on \
 	battery-current		'Fix battery current measurement' on \
-	fast-charge		'Fast charge 6C and 9C batteries, and limit input power to 80W (EXPERIMENTAL)' off \
+	fast-charge		'Fast charge 6C and 9C batteries, and limit input power to 80W' off \
 	2> selected
 for p in $(cat selected); do
 	fn="patches/$p.rapatch"

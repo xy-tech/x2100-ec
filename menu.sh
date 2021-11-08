@@ -9,6 +9,7 @@ dialog --checklist          'Choose the desired patches' 0 0 0 \
     battery-current         'Fix battery current measurement' on \
     fast-charge             'Fast charge 6C and 9C batteries, and limit input power to 80W' off \
     enable-hotkeys          'Generate scancodes for all hotkeys' off \
+    enable-hotkey-f3        'Generate scancodes for F3 hotkey' off \
     default-fan-pwm-table   'Set default fan pwm table' off \
     silent-fan-pwm-table    'Set silent fan pwm table' off \
     silent2-fan-pwm-table   'Set silent 2 fan pwm table' off \
